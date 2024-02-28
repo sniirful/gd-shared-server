@@ -62,7 +62,6 @@ func ClearAndPrintln(format string, args ...any) {
 	Println(format, args...)
 }
 
-// TODO: decide between done and current
 func PrintProgress(total, done int64) {
 	if previousLogIsProgressLog {
 		cursor.UpAndClear(1)

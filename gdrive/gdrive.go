@@ -132,7 +132,7 @@ func GetMD5Checksum(parentFolder, filename string) (string, error) {
 	return file.Md5Checksum, nil
 }
 
-func DownloadFile(parentFolder, remoteFileName, localFileName string, progressFunction func(total, current int64)) error {
+func DownloadFile(parentFolder, remoteFileName, localFileName string, progressFunction func(total, done int64)) error {
 	res, f, err := getFileDownloadResponse(parentFolder, remoteFileName)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func DownloadFile(parentFolder, remoteFileName, localFileName string, progressFu
 	return nil
 }
 
-func UploadFile(parentFolder, filename string, progressFunction func(total, current int64)) error {
+func UploadFile(parentFolder, filename string, progressFunction func(total, done int64)) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func listFiles(query string) ([]*drive.File, error) {
 	return fileList.Files, nil
 }
 
-func uploadFileReader(parentFolder, filename string, reader io.Reader, progressFunction func(total, current int64)) error {
+func uploadFileReader(parentFolder, filename string, reader io.Reader, progressFunction func(total, done int64)) error {
 	service, err := gdriveservice.GetService()
 	if err != nil {
 		return err

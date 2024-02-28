@@ -29,7 +29,7 @@ func OpenInDefaultApplication(filename string) {
 	commands.RunSilent(command)
 }
 
-func Copy(outFile *os.File, reader io.Reader, progressFunction func(current int64)) error {
+func Copy(outFile *os.File, reader io.Reader, progressFunction func(done int64)) error {
 	buffer := make([]byte, BufferSize)
 	var progressDone int64
 	for {
