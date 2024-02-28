@@ -116,7 +116,7 @@ func GetFileContent(parentFolder, filename string) ([]byte, error) {
 
 func WriteFileContent(parentFolder, filename string, content []byte) error {
 	reader := bytes.NewReader(content)
-	return uploadFileReader(parentFolder, filename, reader, func(_, _ int64) {})
+	return uploadFileReader(parentFolder, filename, reader, int64(len(content)), func(_, _ int64) {})
 }
 
 func GetMD5Checksum(parentFolder, filename string) (string, error) {
@@ -133,7 +133,7 @@ func GetMD5Checksum(parentFolder, filename string) (string, error) {
 }
 
 func DownloadFile(parentFolder, remoteFileName, localFileName string, progressFunction func(total, done int64)) error {
-	res, f, err := getFileDownloadResponse(parentFolder, remoteFileName)
+	res, driveFile, err := getFileDownloadResponse(parentFolder, remoteFileName)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func DownloadFile(parentFolder, remoteFileName, localFileName string, progressFu
 	defer outFile.Close()
 
 	if err = files.Copy(outFile, res.Body, func(done int64) {
-		progressFunction(f.Size, done)
+		progressFunction(driveFile.Size, done)
 	}); err != nil {
 		return err
 	}
@@ -161,9 +161,12 @@ func UploadFile(parentFolder, filename string, progressFunction func(total, done
 	}
 	defer file.Close()
 
-	return uploadFileReader(parentFolder, filename, file, func(current, total int64) {
-		progressFunction(total, current)
-	})
+	fileStat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	return uploadFileReader(parentFolder, filename, file, fileStat.Size(), progressFunction)
 }
 
 func listFiles(query string) ([]*drive.File, error) {
@@ -191,7 +194,7 @@ func listFiles(query string) ([]*drive.File, error) {
 	return fileList.Files, nil
 }
 
-func uploadFileReader(parentFolder, filename string, reader io.Reader, progressFunction func(total, done int64)) error {
+func uploadFileReader(parentFolder, filename string, reader io.Reader, size int64, progressFunction func(total, done int64)) error {
 	service, err := gdriveservice.GetService()
 	if err != nil {
 		return err
@@ -218,12 +221,12 @@ func uploadFileReader(parentFolder, filename string, reader io.Reader, progressF
 	// new file; if there was not, then we only have to
 	// update the existing one
 	if err != nil {
-		_, err = service.Files.Create(newFile).Media(reader).ProgressUpdater(func(current, total int64) {
-			progressFunction(total, current)
+		_, err = service.Files.Create(newFile).Media(reader).ProgressUpdater(func(done, total int64) {
+			progressFunction(size, done)
 		}).Do()
 	} else {
-		_, err = service.Files.Update(driveFile.Id, newFile).Media(reader).ProgressUpdater(func(current, total int64) {
-			progressFunction(total, current)
+		_, err = service.Files.Update(driveFile.Id, newFile).Media(reader).ProgressUpdater(func(done, total int64) {
+			progressFunction(size, done)
 		}).Do()
 	}
 	return err

@@ -66,7 +66,7 @@ func PrintProgress(total, done int64) {
 	if previousLogIsProgressLog {
 		cursor.UpAndClear(1)
 	}
-	Println("Progress: %v%%", float32(done)/float32(total)*100)
+	Println("Progress: %v%%", int(float32(done)/float32(total)*100))
 	previousLogIsProgressLog = true
 }
 
