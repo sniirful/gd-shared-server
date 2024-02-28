@@ -1,10 +1,10 @@
 package commands
 
 import (
+	"app/signals"
 	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"runtime"
 	"syscall"
 )
@@ -21,7 +21,6 @@ func RunWithWorkingDirAndLogFile(command, workingDir string, logFile *os.File) {
 	runCommand(command, false, workingDir, logFile)
 }
 
-// improved by Google Bard
 func runCommand(command string, silent bool, workingDir string, logFile *os.File) error {
 	var arguments []string
 	if runtime.GOOS == "windows" {
@@ -32,9 +31,6 @@ func runCommand(command string, silent bool, workingDir string, logFile *os.File
 	arguments = append(arguments, command)
 
 	cmd := exec.Command(arguments[0], arguments[1:]...)
-
-	// Create a new process group for the subcommand
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	writers := []io.Writer{}
 	if !silent {
@@ -52,24 +48,19 @@ func runCommand(command string, silent bool, workingDir string, logFile *os.File
 		cmd.Dir = workingDir
 	}
 
-	// Capture system signals for better control
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-	defer signal.Stop(sigCh)
-
-	err := cmd.Start()
-	if err != nil {
+	// create a new process group for the subcommand so that
+	// when Ctrl-C is pressed, it's not immediately passed
+	// from father to child
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
 		return err
 	}
 
-	go func() {
-		<-sigCh
-		// Send SIGINT signal only to the subcommand process group
+	onStopSignalling := signals.CaptureSIGINT(func() {
 		syscall.Kill(cmd.Process.Pid, syscall.SIGINT)
-	}()
+	})
 
-	err = cmd.Wait()
-	close(sigCh)
-
+	err := cmd.Wait()
+	onStopSignalling()
 	return err
 }
