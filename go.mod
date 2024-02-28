@@ -3,7 +3,9 @@ module app
 go 1.21.5
 
 require (
+	atomicgo.dev/cursor v0.2.0
 	golang.org/x/oauth2 v0.17.0
+	golang.org/x/term v0.17.0
 	google.golang.org/api v0.167.0
 )
 

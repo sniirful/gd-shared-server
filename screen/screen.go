@@ -2,10 +2,41 @@ package screen
 
 import (
 	"app/commands"
-	"app/screen/colors"
 	"fmt"
+	"log"
+	"os"
 	"runtime"
+
+	"atomicgo.dev/cursor"
+	"golang.org/x/term"
 )
+
+var (
+	oldTerminalState *term.State = nil
+
+	// we save this variable so that when we print
+	// progress, if the previous log was progress it
+	// moves the cursor up; if it is not, it prints
+	// the progress regardless
+	previousLogIsProgressLog = false
+)
+
+func StartInteractive() {
+	// this "interactive" mode allows the program to
+	// move the cursor freely, along with giving us the
+	// raw input, that is whenever the user presses a key,
+	// it's immediately passed to the program and the user
+	// doesn't need to press enter
+	var err error
+	oldTerminalState, err = term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		log.Fatalf("Unable to start interactive mode: %v\n", err)
+	}
+}
+
+func StopInteractive() {
+	term.Restore(int(os.Stdin.Fd()), oldTerminalState)
+}
 
 func Clear() {
 	var command string
@@ -15,31 +46,33 @@ func Clear() {
 		command = "clear"
 	}
 
-	command = ""
 	commands.Run(command)
 }
 
-func PrintDefaultSelectionScreen(isServerOn bool) {
+func Println(format string, args ...any) {
+	// \n\r because we assume the interactive mode, thus
+	// if we go to a newline it won't actually be a newline
+	// but rather it will just go down with the cursor
+	fmt.Printf("%v\n\r", fmt.Sprintf(format, args...))
+	previousLogIsProgressLog = false
+}
+
+func ClearAndPrintln(format string, args ...any) {
 	Clear()
+	Println(format, args...)
+}
 
-	if isServerOn {
-		// The server is currently: ON
-		// 2. View the log until the last upload
-
-		fmt.Printf("The server is currently %v"+"\n"+
-			"%v View the log until the last upload"+"\n",
-			colors.GreenBold("ON"), colors.Bold("2."))
-	} else {
-		// The server is currently: OFF
-		// 1. Start the server
-		// 2. View the full log
-		// 3. (DANGEROUS) Force upload your version of the server as the latest
-
-		fmt.Printf("The server is currently %v"+"\n"+
-			"%v Start the server"+"\n"+
-			"%v View the full log"+"\n"+
-			"%v (DANGEROUS) Force upload your version of the server as the latest"+"\n",
-			colors.RedBold("OFF"), colors.Bold("1."), colors.Bold("2."), colors.Bold("3."))
+// TODO: decide between done and current
+func PrintProgress(total, done int64) {
+	if previousLogIsProgressLog {
+		cursor.UpAndClear(1)
 	}
-	fmt.Println()
+	Println("Progress: %v%%", float32(done)/float32(total)*100)
+	previousLogIsProgressLog = true
+}
+
+func Fatalln(format string, args ...any) {
+	Println(format, args...)
+	StopInteractive()
+	os.Exit(1)
 }

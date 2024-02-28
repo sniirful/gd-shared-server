@@ -1,6 +1,8 @@
 package oauth
 
 import (
+	"app/files/fileflags"
+	"app/files/filemodes"
 	"app/oauth/oauthutils"
 	"context"
 	"encoding/json"
@@ -132,7 +134,7 @@ func getOfflineTokenFromWeb(config *oauth2.Config, printURLFunction printURLFunc
 }
 
 func saveOfflineToken(token *oauth2.Token) error {
-	tokenFile, err := os.OpenFile(oAuthOfflineTokenFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	tokenFile, err := os.OpenFile(oAuthOfflineTokenFileName, fileflags.OVERWRITE, filemodes.RW_______)
 	if err != nil {
 		return err
 	}

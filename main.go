@@ -5,26 +5,32 @@ import (
 	"app/screen"
 	"app/server"
 	"app/serverstatus"
-	"fmt"
+	"app/signals"
 )
 
 func main() {
-	screen.Clear()
-	fmt.Println("Connecting to Google Drive...")
+	screen.StartInteractive()
+	defer screen.StopInteractive()
 
-	// check if the app can connect to google drive
+	// we want to handle Ctrl-C on our own
+	onStopSignalling := signals.CaptureSIGINT(func() {
+		// TODO
+		screen.StopInteractive()
+	})
+	defer onStopSignalling()
+
+	// by listing the files and doing nothing with them,
+	// we can make sure that the connection with google
+	// drive works properly
+	screen.ClearAndPrintln("Connecting to Google Drive...")
 	if _, err := gdrive.ListAllFiles(); err != nil {
-		fmt.Printf("Error while connecting to Google Drive: %v\n", err)
+		screen.Println("Error while connecting to Google Drive: %v", err)
 		return
 	}
 
-	// check if the server is up:
-	// it is off if the lockfile does not exist (err != nil)
-	// or if it exists and contains anything other than "ON"
-	// inside of it
-	if bytes, err := gdrive.GetFileContent(server.RemoteFolder, server.LockFile); err != nil || string(bytes) != "ON" {
-		serverstatus.HandleOff()
-	} else {
+	if server.IsOn() {
 		serverstatus.HandleOn()
+	} else {
+		serverstatus.HandleOff()
 	}
 }

@@ -1,7 +1,10 @@
 package server
 
 import (
+	"app/commands"
 	"app/files"
+	"app/files/fileflags"
+	"app/files/filemodes"
 	"app/gdrive"
 	"app/screen"
 	"fmt"
@@ -20,15 +23,153 @@ const (
 	CommandFile             = "start.command"
 )
 
-func Download() {
-	screen.Clear()
-	fmt.Println("Checking local files against remote ones...")
+func IsOn() bool {
+	// check if the server is up:
+	// it is off if the lockfile does not exist (err != nil)
+	// or if it exists and contains anything other than "ON"
+	// inside of it, so we check for that and return the
+	// inverse of it
+	bytes, err := gdrive.GetFileContent(RemoteFolder, LockFile)
+	return !(err != nil || string(bytes) != "ON")
+}
 
-	// first we compress the current server; this will be
-	// useful to calculate the md5 hash
+func Start() {
+	screen.ClearAndPrintln("Preparing to start server...")
+
+	screen.Println("Opening logfile in write mode...")
+	logFile, err := os.OpenFile(LogFile, fileflags.APPEND, filemodes.RW_R__R__)
+	if err != nil {
+		screen.Fatalln("Error while opening logfile in write mode: %v", err)
+	}
+	defer logFile.Close()
+
+	screen.Println("Reading command file...")
+	commandBytes, err := os.ReadFile(CommandFile)
+	if err != nil {
+		screen.Fatalln("Error while reading command file: %v", err)
+	}
+
+	screen.Println("Starting server...")
+	commands.RunWithWorkingDirAndLogFile(string(commandBytes), ServerFolder, logFile)
+}
+
+func Download() {
+	screen.ClearAndPrintln("Preparing to download server from Google Drive...")
+
+	screen.Println("Ensuring files and folders are in place...")
+	if err := createRemoteFolderIfNotExists(); err != nil {
+		screen.Fatalln("Error while checking on the folder in Google Drive: %v", err)
+	}
+
+	screen.Println("Checking local files against remote ones...")
+	doHashesMatch, hashesError := checkFilesHashesMatch()
+
+	// we check not only that hashes match, but also that
+	// there were no errors because if there were, it means
+	// that some files may have not been in place
+	if !doHashesMatch && hashesError == nil {
+		screen.Println("Found different files. Downloading files from Google Drive...")
+
+		screen.Println("Downloading compressed server from Google Drive...")
+		if err := gdrive.DownloadFile(RemoteFolder, ServerFolderPacked, ServerFolderPacked, screen.PrintProgress); err != nil {
+			screen.Fatalln("Error while downloading compressed server from Google Drive: %v", err)
+		}
+
+		screen.Println("Downloading logfile from Google Drive...")
+		if err := gdrive.DownloadFile(RemoteFolder, LogFile, LogFile, screen.PrintProgress); err != nil {
+			screen.Fatalln("Error while downloading logfile from Google Drive: %v", err)
+		}
+	} else {
+		screen.Println("Found the most recent files to be local. Skipping downloading from Google Drive...")
+	}
+
+	screen.Println("Deleting old server files...")
+	if err := os.RemoveAll(ServerFolder); err != nil {
+		screen.Fatalln("Error while deleting old server files: %v", err)
+	}
+
+	screen.Println("Decompressing server file...")
+	if err := files.DecompressGZip(ServerFolderPacked, ServerFolder); err != nil {
+		screen.Fatalln("Error while decompressing server file: %v", err)
+	}
+
+	screen.Println("Telling Google Drive that the server is now ON...")
+	if err := gdrive.WriteFileContent(RemoteFolder, LockFile, []byte("ON")); err != nil {
+		screen.Fatalln("Error while telling Google Drive about the new server status: %v", err)
+	}
+
+	screen.Println("Cleaning up...")
+	if err := os.Remove(ServerFolderPacked); err != nil {
+		screen.Fatalln("Error while cleaning up: %v", err)
+	}
+}
+
+func Upload() {
+	screen.ClearAndPrintln("Preparing to upload server to Google Drive...")
+
+	screen.Println("Ensuring files and folders are in place...")
+	if err := createRemoteFolderIfNotExists(); err != nil {
+		screen.Fatalln("Error while checking on the folder in Google Drive: %v", err)
+	}
+
+	screen.Println("Compressing server folder...")
 	if err := files.CompressGZip(ServerFolder, ServerFolderPacked); err != nil {
-		fmt.Printf("Error while compressing local server: %v\n", err)
-		os.Exit(1)
+		screen.Fatalln("Error while compressing server folder: %v", err)
+	}
+
+	screen.Println("Uploading compressed server to Google Drive...")
+	if err := gdrive.UploadFile(RemoteFolder, ServerFolderPacked, screen.PrintProgress); err != nil {
+		screen.Fatalln("Error while uploading compressed server to Google Drive: %v", err)
+	}
+
+	screen.Println("Uploading logfile to Google Drive...")
+	if err := gdrive.UploadFile(RemoteFolder, LogFile, screen.PrintProgress); err != nil {
+		screen.Fatalln("Error while uploading logfile to Google Drive: %v", err)
+	}
+
+	screen.Println("Telling Google Drive that the server is now OFF...")
+	if err := gdrive.WriteFileContent(RemoteFolder, LockFile, []byte("OFF")); err != nil {
+		screen.Fatalln("Error while telling Google Drive about the new server status: %v", err)
+	}
+
+	screen.Println("Cleaning up...")
+	if err := os.Remove(ServerFolderPacked); err != nil {
+		screen.Fatalln("Error while cleaning up: %v", err)
+	}
+}
+
+func BackupExisting() {
+	// we do not care if it works or not, since we really
+	// don't know if the file exists in the first place
+	screen.Println("Creating a backup of the server...")
+	_ = gdrive.RenameFile(RemoteFolder, ServerFolderPacked, fmt.Sprintf("server-backup-%v.tar.gz", time.Now().Unix()))
+}
+
+func DownloadRemoteLogFile() {
+	screen.ClearAndPrintln("Downloading remote logfile...")
+	if err := gdrive.DownloadFile(RemoteFolder, LogFile, DownloadedRemoteLogFile, screen.PrintProgress); err != nil {
+		screen.Fatalln("Error while downloading remote logfile: %v", err)
+	}
+}
+
+func createRemoteFolderIfNotExists() error {
+	// if err != nil, likely the folder does not exist
+	// there could have been any other error but we check
+	// it later when creating the folder
+	if _, err := gdrive.GetFolderByName("", RemoteFolder); err != nil {
+		if err = gdrive.CreateFolder(RemoteFolder); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkFilesHashesMatch() (bool, error) {
+	// before checking all the files, we firstly need
+	// to compress the server folder, so we can check
+	// its hash against the google drive one
+	if err := files.CompressGZip(ServerFolder, ServerFolderPacked); err != nil {
+		screen.Fatalln("Error while compressing local server: %v", err)
 	}
 
 	filesToCheck := []string{
@@ -42,8 +183,7 @@ func Download() {
 	for _, fileToCheck := range filesToCheck {
 		localHash, err := files.CalculateFileMD5(fileToCheck)
 		if err != nil {
-			fmt.Printf("Error while getting information about remote server: %v\n", err)
-			os.Exit(1)
+			screen.Fatalln("Error while checking file %v: %v", fileToCheck, err)
 		}
 		remoteHash, err := gdrive.GetMD5Checksum(RemoteFolder, fileToCheck)
 
@@ -55,157 +195,5 @@ func Download() {
 		}
 	}
 
-	// we compare the hashes; if they are different,
-	// we take for granted that the remote file is newer;
-	// if hashesError != nil, it means that at least one
-	// necessary file could not be found, thus we need to
-	// create them
-	if !doHashesMatch && hashesError == nil {
-		// we first remove the previously created tarball
-		if err := os.Remove(ServerFolderPacked); err != nil {
-			fmt.Printf("Error while removing the compressed local server: %v\n", err)
-			os.Exit(1)
-		}
-
-		// we download the new one from google drive
-		screen.Clear()
-		fmt.Println("Downloading latest compressed server from Google Drive...")
-		// TODO: change the done into current or vice-versa
-		if err := gdrive.DownloadFile(RemoteFolder, ServerFolderPacked, ServerFolderPacked, func(total, done int64) {
-			// TODO
-			fmt.Printf("Progress: %v%%\n", float32(done)/float32(total)*100)
-		}); err != nil {
-			fmt.Printf("Error while downloading remote server: %v\n", err)
-			os.Exit(1)
-		}
-
-		// then we download the latest logfile from
-		// google drive as well
-		screen.Clear()
-		fmt.Println("Downloading latest logfile from Google Drive...")
-		if err := gdrive.DownloadFile(RemoteFolder, LogFile, LogFile, func(total, done int64) {
-			// TODO
-			fmt.Printf("Progress: %v%%\n", float32(done)/float32(total)*100)
-		}); err != nil {
-			fmt.Printf("Error while downloading logfile: %v\n", err)
-			os.Exit(1)
-		}
-
-		// we do NOT want to download the command file,
-		// as it would most certainly lead to abuse
-	}
-
-	// now we delete the previous server folder
-	fmt.Println("Deleting previous server files...")
-	if err := os.RemoveAll(ServerFolder); err != nil {
-		fmt.Printf("Error while removing old server: %v\n", err)
-		os.Exit(1)
-	}
-
-	// eventually, we decompress the newly downloaded server
-	screen.Clear()
-	fmt.Println("Decompressing server folder...")
-	if err := files.DecompressGZip(ServerFolderPacked, ServerFolder); err != nil {
-		fmt.Printf("Error while decompressing server: %v\n", err)
-		os.Exit(1)
-	}
-
-	// before telling google drive that the server is on,
-	// we have to make sure that the folder exists
-	fmt.Println("Ensuring files and folders are in place...")
-	if err := createRemoteFolderIfNotExists(); err != nil {
-		fmt.Printf("Error while creating folder: %v\n", err)
-		os.Exit(1)
-	}
-
-	// now we write the lockfile with content ON
-	screen.Clear()
-	fmt.Println("Telling Google Drive that the server is now ON...")
-	if err := gdrive.WriteFileContent(RemoteFolder, LockFile, []byte("ON")); err != nil {
-		fmt.Printf("Error while uploading server information to remote server: %v\n", err)
-		os.Exit(1)
-	}
-
-	// and lastly we delete the packed server
-	if err := os.Remove(ServerFolderPacked); err != nil {
-		fmt.Printf("Error while removing the compressed local server: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func Upload() {
-	// we first want to compress the local server folder
-	screen.Clear()
-	fmt.Println("Compressing server folder...")
-	if err := files.CompressGZip(ServerFolder, ServerFolderPacked); err != nil {
-		fmt.Printf("Error while compressing local server: %v\n", err)
-		os.Exit(1)
-	}
-
-	// after that, we want to check if the server folder
-	// exists in the google drive space; if it does,
-	// then nothing else needs to be done; if it does not,
-	// then we need to create it
-	fmt.Println("Ensuring files and folders are in place...")
-	if err := createRemoteFolderIfNotExists(); err != nil {
-		fmt.Printf("Error while creating folder: %v\n", err)
-		os.Exit(1)
-	}
-
-	// now it's time to upload the previously compressed
-	// folder
-	screen.Clear()
-	fmt.Println("Uploading compressed server...")
-	if err := gdrive.UploadFile(RemoteFolder, ServerFolderPacked, func(total, done int64) {
-		// TODO
-		fmt.Printf("Progress: %v%%\n", float32(done)/float32(total)*100)
-	}); err != nil {
-		fmt.Printf("Error while uploading local server to Google Drive: %v\n", err)
-		os.Exit(1)
-	}
-
-	// then, of course, the logfile
-	screen.Clear()
-	fmt.Println("Uploading logfile...")
-	if err := gdrive.UploadFile(RemoteFolder, LogFile, func(total, done int64) {
-		fmt.Printf("Progress: %v%%\n", float32(done)/float32(total)*100)
-	}); err != nil {
-		fmt.Printf("Error while uploading local logfile to Google Drive: %v\n", err)
-		os.Exit(1)
-	}
-
-	// then the lockfile, setting it to OFF
-	screen.Clear()
-	fmt.Println("Telling Google Drive that the server is now OFF...")
-	if err := gdrive.WriteFileContent(RemoteFolder, LockFile, []byte("OFF")); err != nil {
-		fmt.Printf("Error while uploading server information to remote server: %v\n", err)
-		os.Exit(1)
-	}
-
-	// lastly, we delete the previously compressed server
-	// folder, to clean up space
-	if err := os.Remove(ServerFolderPacked); err != nil {
-		fmt.Printf("Error while removing the compressed local server: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func BackupExisting() {
-	// we do not care if it works or not, since we really
-	// don't know if the file exists in the first place
-	fmt.Println("Creating a backup of the server...")
-	_ = gdrive.RenameFile(RemoteFolder, ServerFolderPacked, fmt.Sprintf("server-backup-%v.tar.gz", time.Now().Unix()))
-}
-
-func createRemoteFolderIfNotExists() error {
-	if _, err := gdrive.GetFolderByName("", RemoteFolder); err != nil {
-		// if err != nil, likely the folder does not exist
-		// there could have been any other error but we check
-		// it later when creating the folder
-
-		if err = gdrive.CreateFolder(RemoteFolder); err != nil {
-			return err
-		}
-	}
-	return nil
+	return doHashesMatch, hashesError
 }

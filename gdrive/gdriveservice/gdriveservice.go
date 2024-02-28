@@ -2,8 +2,8 @@ package gdriveservice
 
 import (
 	"app/oauth"
+	"app/screen"
 	"context"
-	"fmt"
 
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -19,10 +19,11 @@ func GetService() (*drive.Service, error) {
 	}
 
 	client, err := oauth.GetClient(func(url string) {
-		fmt.Printf("Grant permission to your account using the following link:\n%v\n", url)
+		screen.Println("Grant permission to your account using the following link:")
+		screen.Println(url)
 	}, drive.DriveScope)
 	if err != nil {
-		fmt.Println(err)
+		screen.Println(err.Error())
 		return nil, err
 	}
 

@@ -1,6 +1,7 @@
 package oauthutils
 
 import (
+	"app/files/filemodes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,7 +49,7 @@ func FixCredentialsJSON(path string, port string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(path, newJSON, 0644)
+	err = os.WriteFile(path, newJSON, filemodes.RW_R__R__)
 	if err != nil {
 		return err
 	}
