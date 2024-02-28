@@ -47,9 +47,7 @@ func Copy(outFile *os.File, reader io.Reader, progressFunction func(current int6
 		}
 
 		progressDone += int64(read)
-		// here we put the progress function on another
-		// thread in order not to slow down the copy
-		go progressFunction(progressDone)
+		progressFunction(progressDone)
 	}
 	return nil
 }
