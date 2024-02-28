@@ -10,18 +10,14 @@ import (
 )
 
 func Run(command string) {
-	runCommand(command, false, "", nil)
-}
-
-func RunSilent(command string) {
-	runCommand(command, true, "", nil)
+	runCommand(command, "", nil)
 }
 
 func RunWithWorkingDirAndLogFile(command, workingDir string, logFile *os.File) {
-	runCommand(command, false, workingDir, logFile)
+	runCommand(command, workingDir, logFile)
 }
 
-func runCommand(command string, silent bool, workingDir string, logFile *os.File) error {
+func runCommand(command string, workingDir string, logFile *os.File) error {
 	var arguments []string
 	if runtime.GOOS == "windows" {
 		arguments = append(arguments, []string{"cmd", "/C"}...)
@@ -31,12 +27,10 @@ func runCommand(command string, silent bool, workingDir string, logFile *os.File
 	arguments = append(arguments, command)
 
 	cmd := exec.Command(arguments[0], arguments[1:]...)
+	cmd.Stdin = os.Stdin
 
 	writers := []io.Writer{}
-	if !silent {
-		cmd.Stdin = os.Stdin
-		writers = append(writers, os.Stdout)
-	}
+	writers = append(writers, os.Stdout)
 	if logFile != nil {
 		writers = append(writers, logFile)
 

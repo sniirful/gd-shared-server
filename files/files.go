@@ -26,7 +26,7 @@ func OpenInDefaultApplication(filename string) {
 			return "xdg-open"
 		}
 	}(), filename)
-	commands.RunSilent(command)
+	commands.Run(command)
 }
 
 func Copy(outFile *os.File, reader io.Reader, progressFunction func(done int64)) error {
