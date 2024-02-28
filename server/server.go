@@ -34,7 +34,6 @@ func Download() {
 	filesToCheck := []string{
 		ServerFolderPacked,
 		LogFile,
-		CommandFile,
 	}
 	var (
 		doHashesMatch = true
@@ -58,9 +57,9 @@ func Download() {
 
 	// we compare the hashes; if they are different,
 	// we take for granted that the remote file is newer;
-	// if err != nil, it means that the file could not be
-	// found, thus we cannot download the server file and
-	// must use the local one
+	// if hashesError != nil, it means that at least one
+	// necessary file could not be found, thus we need to
+	// create them
 	if !doHashesMatch && hashesError == nil {
 		// we first remove the previously created tarball
 		if err := os.Remove(ServerFolderPacked); err != nil {
