@@ -35,11 +35,15 @@ func runCommand(command string, silent bool, workingDir string, logFile *os.File
 	writers := []io.Writer{}
 	if !silent {
 		cmd.Stdin = os.Stdin
-
 		writers = append(writers, os.Stdout)
 	}
 	if logFile != nil {
 		writers = append(writers, logFile)
+
+		// we make sure to copy the command stdin to
+		// the logfile as well, to make it more
+		// readable
+		go io.Copy(logFile, cmd.Stdin)
 	}
 	writer := io.MultiWriter(writers...)
 	cmd.Stdout = writer
