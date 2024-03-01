@@ -12,13 +12,16 @@ func HandleOn() {
 	printDefaultSelectionScreen(true)
 	// get user input and check if the choice is valid
 	choice := input.GetChar()
-	if !strings.Contains("2", choice) {
+	if !strings.Contains("24", choice) {
 		screen.Fatalln("Error: invalid choice")
 	}
 
-	// at this point, only "2" must have been
-	// pressed, so we can avoid checking
-	interactions.ViewLog()
+	switch choice {
+	case "2":
+		interactions.ViewLog()
+	case "4":
+		interactions.ForceServerOff()
+	}
 }
 
 func HandleOff() {
@@ -45,9 +48,11 @@ func printDefaultSelectionScreen(isServerOn bool) {
 	if isServerOn {
 		// The server is currently: ON
 		// 2. View the log until the last upload
+		// 4. Force the server to be considered OFF
 
 		screen.Println("The server is currently %v", colors.GreenBold("ON"))
 		screen.Println("%v View the log until the last upload", colors.Bold("2."))
+		screen.Println("%v (DANGEROUS) Force the server to be considered OFF", colors.Bold("4."))
 	} else {
 		// The server is currently: OFF
 		// 1. Start the server

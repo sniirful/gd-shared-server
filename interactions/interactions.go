@@ -37,3 +37,7 @@ func ViewLog() {
 func ForceUploadServer() {
 	server.Upload()
 }
+
+func ForceServerOff() {
+	server.ForceOff()
+}

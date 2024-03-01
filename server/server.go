@@ -152,6 +152,18 @@ func DownloadRemoteLogFile() {
 	}
 }
 
+func ForceOff() {
+	screen.ClearAndPrintln("Ensuring files and folders are in place...")
+	if err := createRemoteFolderIfNotExists(); err != nil {
+		screen.Fatalln("Error while checking on the folder in Google Drive: %v", err)
+	}
+
+	screen.Println("Telling Google Drive that the server is now OFF...")
+	if err := gdrive.WriteFileContent(RemoteFolder, LockFile, []byte("OFF")); err != nil {
+		screen.Fatalln("Error while telling Google Drive about the new server status: %v", err)
+	}
+}
+
 func createRemoteFolderIfNotExists() error {
 	// if err != nil, likely the folder does not exist
 	// there could have been any other error but we check
