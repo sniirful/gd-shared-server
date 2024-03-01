@@ -13,7 +13,7 @@ func main() {
 	defer screen.StopInteractive()
 
 	// we want to handle Ctrl-C on our own
-	onStopSignalling := signals.CaptureSIGINT(func() {
+	onStopSignalling := signals.CaptureInterrupt(func() {
 		// TODO
 		screen.StopInteractive()
 	})
