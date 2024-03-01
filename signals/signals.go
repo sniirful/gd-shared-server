@@ -3,15 +3,10 @@ package signals
 import (
 	"os"
 	"os/signal"
-	"syscall"
 )
 
 func CaptureInterrupt(handlerFunction func()) func() {
 	return captureSignal(handlerFunction, os.Interrupt, false)
-}
-
-func CaptureSIGWINCH(handlerFunction func()) func() {
-	return captureSignal(handlerFunction, syscall.SIGWINCH, true)
 }
 
 func captureSignal(handlerFunction func(), signalToSend os.Signal, sendInitialSignal bool) func() {
