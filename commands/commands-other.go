@@ -16,6 +16,7 @@ import (
 func runCommand(command string, workingDir string, logFile *os.File) error {
 	arguments := []string{"/bin/bash", "-c", command}
 	cmd := exec.Command(arguments[0], arguments[1:]...)
+	cmd.Env = os.Environ()
 	if workingDir != "" {
 		cmd.Dir = workingDir
 	}
