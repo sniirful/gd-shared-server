@@ -9,6 +9,7 @@ import (
 	"app/screen"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -18,9 +19,9 @@ const (
 	RemoteFolder       = "GD-Server"
 
 	LogFile                 = "logfile"
-	DownloadedRemoteLogFile = "logfile.remote"
+	DownloadedRemoteLogFile = "logfile.txt"
 	LockFile                = "lockfile"
-	CommandFile             = "start.command"
+	CommandFile             = "command"
 )
 
 func IsOn() bool {
@@ -44,7 +45,7 @@ func Start() {
 	defer logFile.Close()
 
 	screen.Println("Reading command file...")
-	commandBytes, err := os.ReadFile(CommandFile)
+	commandBytes, err := os.ReadFile(getCommandFile())
 	if err != nil {
 		screen.Fatalln("Error while reading command file: %v", err)
 	}
@@ -174,6 +175,15 @@ func createRemoteFolderIfNotExists() error {
 		}
 	}
 	return nil
+}
+
+func getCommandFile() string {
+	osCommandFile := fmt.Sprintf("%v.%v", CommandFile, runtime.GOOS)
+	if _, err := os.Stat(osCommandFile); err == nil {
+		return osCommandFile
+	}
+
+	return CommandFile
 }
 
 func checkFilesHashesMatch() (bool, error) {
