@@ -20,10 +20,12 @@ func GetService() (*drive.Service, error) {
 
 	client, err := oauth.GetClient(func(url string) {
 		screen.Println("Grant permission to your account using the following link:")
-		screen.Println(url)
+		screen.Println("%v", url)
+	}, func() {
+		screen.Println("Reconnecting to Google Drive...")
 	}, drive.DriveScope)
 	if err != nil {
-		screen.Println(err.Error())
+		screen.Println("%v", err)
 		return nil, err
 	}
 

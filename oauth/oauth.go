@@ -29,7 +29,7 @@ var (
 	savedClient *http.Client = nil
 )
 
-func GetClient(printURLFunction printURLFunctionType, scope ...string) (*http.Client, error) {
+func GetClient(printURLFunction printURLFunctionType, authenticatedFunction func(), scope ...string) (*http.Client, error) {
 	if savedClient != nil {
 		return savedClient, nil
 	}
@@ -50,7 +50,7 @@ func GetClient(printURLFunction printURLFunctionType, scope ...string) (*http.Cl
 		return nil, err
 	}
 	// lastly, we create the google auth client
-	savedClient, err := createClient(config, printURLFunction)
+	savedClient, err := createClient(config, printURLFunction, authenticatedFunction)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +58,13 @@ func GetClient(printURLFunction printURLFunctionType, scope ...string) (*http.Cl
 	return savedClient, nil
 }
 
-func createClient(config *oauth2.Config, printURLFunction printURLFunctionType) (*http.Client, error) {
+func createClient(config *oauth2.Config, printURLFunction printURLFunctionType, authenticatedFunction func()) (*http.Client, error) {
 	// we first try to create the token from the saved file
 	token, err := getOfflineTokenFromFile(oAuthOfflineTokenFileName)
 	if err != nil {
 		// if it doesn't work, chances are this token is not valid
 		// or doesn't exist; we try to get it interactively
-		token, err = getOfflineTokenFromWeb(config, printURLFunction)
+		token, err = getOfflineTokenFromWeb(config, printURLFunction, authenticatedFunction)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func getOfflineTokenFromFile(file string) (*oauth2.Token, error) {
 }
 
 // TODO: add confirmation that it's connecting again
-func getOfflineTokenFromWeb(config *oauth2.Config, printURLFunction printURLFunctionType) (*oauth2.Token, error) {
+func getOfflineTokenFromWeb(config *oauth2.Config, printURLFunction printURLFunctionType, authenticatedFunction func()) (*oauth2.Token, error) {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	if !strings.HasPrefix(authURL, "https://") {
 		return nil, errors.New("invalid oauth credentials")
@@ -118,6 +118,7 @@ func getOfflineTokenFromWeb(config *oauth2.Config, printURLFunction printURLFunc
 			return
 		}
 
+		authenticatedFunction()
 		// close the server
 		w.Write([]byte("You can now close this tab."))
 		wg.Done()
