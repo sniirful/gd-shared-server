@@ -21,18 +21,23 @@ func main() {
 	})
 	defer onStopSignalling()
 
-	// by listing the files and doing nothing with them,
-	// we can make sure that the connection with google
-	// drive works properly
-	screen.ClearAndPrintln("Connecting to Google Drive...")
-	if _, err := gdrive.ListAllFiles(); err != nil {
-		screen.Println("Error while connecting to Google Drive: %v", err)
-		return
-	}
+	// we're using an infinite loop instead of recursion
+	// in order not to call the above functions
+	// without a reason to do so
+	for {
+		// by listing the files and doing nothing with them,
+		// we can make sure that the connection with google
+		// drive works properly
+		screen.ClearAndPrintln("Connecting to Google Drive...")
+		if _, err := gdrive.ListAllFiles(); err != nil {
+			screen.Println("Error while connecting to Google Drive: %v", err)
+			return
+		}
 
-	if server.IsOn() {
-		serverstatus.HandleOn()
-	} else {
-		serverstatus.HandleOff()
+		if server.IsOn() {
+			serverstatus.HandleOn()
+		} else {
+			serverstatus.HandleOff()
+		}
 	}
 }

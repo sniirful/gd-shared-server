@@ -13,7 +13,7 @@ func HandleOn() {
 	// get user input and check if the choice is valid
 	choice := input.GetChar()
 	if !strings.Contains("24", choice) {
-		screen.Fatalln("Error: invalid choice")
+		screen.Fatalln("Quitting...")
 	}
 
 	switch choice {
@@ -29,7 +29,7 @@ func HandleOff() {
 	// get user input and check if the choice is valid
 	choice := input.GetChar()
 	if !strings.Contains("123", choice) {
-		screen.Fatalln("Error: invalid choice")
+		screen.Fatalln("Quitting...")
 	}
 
 	switch choice {
