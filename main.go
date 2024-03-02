@@ -14,8 +14,10 @@ func main() {
 
 	// we want to handle Ctrl-C on our own
 	onStopSignalling := signals.CaptureInterrupt(func() {
-		// TODO
-		screen.StopInteractive()
+		// there's nothing we need to do on interrupt
+		// captured, we just need to make sure that the
+		// program doesn't exit because the user pressed
+		// Ctrl-C by mistake
 	})
 	defer onStopSignalling()
 
