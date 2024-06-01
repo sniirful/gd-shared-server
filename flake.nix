@@ -6,15 +6,12 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }: {
-    # all this whole mess does is loop through flake-utils.lib.allSystems
-    # and set the devShells."${system}".default attribute to pkgs.mkShell
-    devShells = builtins.foldl' (attrSet: system:
+  outputs = { self, nixpkgs, flake-utils, ... }: flake-utils.lib.eachSystem flake-utils.lib.allSystems (system:
     let
       pkgs = import nixpkgs { inherit system; };
     in
-    attrSet // {
-      "${system}".default = pkgs.mkShell rec {
+    {
+      devShell = pkgs.mkShell rec {
         fhsName = "gd-shared-server-fhs-env";
         fhsScriptName = "gd-shared-server-fhs-env-script";
         fhsPackages = with pkgs; [
@@ -47,6 +44,6 @@
           exit 0
         '';
       };
-    }) {} flake-utils.lib.allSystems;
-  };
+    }
+  );
 }
