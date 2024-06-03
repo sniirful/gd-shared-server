@@ -9,7 +9,9 @@ import (
 	"app/screen"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -45,13 +47,13 @@ func Start() {
 	defer logFile.Close()
 
 	screen.Println("Reading command file...")
-	commandBytes, err := os.ReadFile(getCommandFile())
+	command, err := getCommand()
 	if err != nil {
 		screen.Fatalln("Error while reading command file: %v", err)
 	}
 
 	screen.Println("Starting server...")
-	commands.RunWithWorkingDirAndLogFile(string(commandBytes), ServerFolder, logFile)
+	commands.RunWithWorkingDirAndLogFile(command, ServerFolder, logFile)
 }
 
 func Download() {
@@ -177,8 +179,42 @@ func createRemoteFolderIfNotExists() error {
 	return nil
 }
 
+func getCommand() (string, error) {
+	executablePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	executableDir := filepath.Dir(executablePath)
+	commandFile := getCommandFile()
+	commandFilePath := filepath.Join(executableDir, commandFile)
+
+	// if the command file does not have an extension,
+	// it means that the platform is not known, thus
+	// we just read the file contents and execute it
+	if !strings.Contains(commandFile, ".") {
+		commandBytes, err := os.ReadFile(commandFilePath)
+		if err != nil {
+			return "", err
+		}
+		return string(commandBytes), nil
+	}
+
+	// if the platform is windows, then it means that the command
+	// file has a .bat extension, which we need to call with its
+	// name directly; all other platforms are assumed to be
+	// unix-like, so we call the command file with "bash"
+	if runtime.GOOS == "windows" {
+		return commandFilePath, nil
+	}
+	return fmt.Sprintf(`bash "%v"`, commandFilePath), nil
+}
+
 func getCommandFile() string {
 	osCommandFile := fmt.Sprintf("%v.%v", CommandFile, runtime.GOOS)
+	if runtime.GOOS == "windows" {
+		osCommandFile += ".bat"
+	}
+
 	if _, err := os.Stat(osCommandFile); err == nil {
 		return osCommandFile
 	}

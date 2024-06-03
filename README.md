@@ -18,7 +18,7 @@ At the time of writing this, no GitHub Releases are provided. As such, you will 
 The content that will always be shared between anyone who has access to the account is everything that you put inside the `server` folder. To run the actual server, you need to:
 1. read the README.txt and acknowledge what’s written inside;
 2. put the server files inside the `server` folder;
-3. edit the `command` file (or `command.platform` specific file) to set your server entry point (e.g. `java -jar minecraft-server.jar`). The command will be launched inside the `server` folder;
+3. edit the `command` file (or `command.platform` specific file) to set your server entry point (e.g. `java -jar minecraft-server.jar`). The command file is assumed to be Batch on Windows and Bash on all other platforms. The command will be launched inside the `server` folder;
 4. start the application by executing the file `server.platform`;
 5. follow the instructions given by the application.
 

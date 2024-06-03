@@ -7,13 +7,15 @@ mkdir "$DIRNAME/$OUTPUT_DIRECTORY"
 for i in ${!BUILD_PLATFORMS[@]}; do
     platform="${BUILD_PLATFORMS[$i]}"
     outfile="$DIRNAME/$OUTPUT_DIRECTORY/$OUTPUT_BASE_NAME.$platform"
+    commandfile="$DIRNAME/$OUTPUT_DIRECTORY/command.$platform"
     if [ "$platform" == "windows" ]; then
         outfile="$outfile.exe"
+        commandfile="$commandfile.bat"
     fi
 
     echo "Building $platform..."
     GOOS=$platform go build -o "$outfile" "$DIRNAME/main.go"
-    touch "$DIRNAME/$OUTPUT_DIRECTORY/command.$platform"
+    touch "$commandfile"
 done
 
 echo "Creating necessary files and folders..."
