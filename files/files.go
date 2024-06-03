@@ -101,8 +101,13 @@ func CompressGZip(inFolder, outFile string) error {
 			return err
 		}
 
-		// Ensure path is relative to the input folder
-		header.Name = strings.TrimPrefix(path, inFolder)
+		// we need to replace the backslashes with slashes
+		// because the tar package does not support backslashes
+		header.Name = strings.ReplaceAll(
+			strings.TrimPrefix(path, inFolder),
+			string(filepath.Separator),
+			"/",
+		)
 
 		// Write the header to the tar archive
 		if err := tw.WriteHeader(header); err != nil {
