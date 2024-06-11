@@ -39,7 +39,7 @@ func main() {
 		serverSize, _ := gdrive.GetFileSize(server.RemoteFolder, server.ServerFolderPacked)
 
 		if server.IsOn() {
-			serverstatus.HandleOn()
+			serverstatus.HandleOn(serverSize, driveUsage, driveLimit)
 		} else {
 			serverstatus.HandleOff(serverSize, driveUsage, driveLimit)
 		}

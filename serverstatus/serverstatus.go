@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-func HandleOn() {
-	printDefaultSelectionScreen(true, 0, 0, 0)
+func HandleOn(serverSize, driveUsage, driveLimit int64) {
+	printDefaultSelectionScreen(true, serverSize, driveUsage, driveLimit)
 	// get user input and check if the choice is valid
 	choice := input.GetChar()
 	if !strings.Contains("24", choice) {
@@ -51,6 +51,8 @@ func printDefaultSelectionScreen(isServerOn bool, serverSize, driveUsage, driveL
 		// 2. View the log until the last upload
 		// 4. Force the server to be considered OFF
 
+		screen.Println("Google Drive usage: %v / %v", size.Parse(driveUsage), size.Parse(driveLimit))
+		screen.Println("Server size (as per the last upload): %v", size.Parse(serverSize))
 		screen.Println("The server is currently %v", colors.GreenBold("ON"))
 		screen.Println("%v View the log until the last upload", colors.Bold("2."))
 		screen.Println("%v (DANGEROUS) Force the server to be considered OFF", colors.Bold("4."))
