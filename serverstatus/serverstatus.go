@@ -13,7 +13,7 @@ func HandleOn(serverSize, driveUsage, driveLimit int64) {
 	printDefaultSelectionScreen(true, serverSize, driveUsage, driveLimit)
 	// get user input and check if the choice is valid
 	choice := input.GetChar()
-	if !strings.Contains("24", choice) {
+	if !strings.Contains("245", choice) {
 		screen.Fatalln("Quitting...")
 	}
 
@@ -22,6 +22,8 @@ func HandleOn(serverSize, driveUsage, driveLimit int64) {
 		interactions.ViewLog()
 	case "4":
 		interactions.ForceServerOff()
+	case "5":
+		interactions.BackupServer()
 	}
 }
 
@@ -58,6 +60,7 @@ func printDefaultSelectionScreen(isServerOn bool, serverSize, driveUsage, driveL
 		screen.Println("The server is currently %v", colors.GreenBold("ON"))
 		screen.Println("%v View the log until the last upload", colors.Bold("2."))
 		screen.Println("%v (DANGEROUS) Force the server to be considered OFF", colors.Bold("4."))
+		screen.Println("%v Manually create a backup of the server as per the last upload", colors.Bold("5."))
 	} else {
 		// Google Drive usage: 5.31GiB / 15.00GiB
 		// Server size: 1.23GiB

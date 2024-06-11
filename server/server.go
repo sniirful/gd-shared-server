@@ -145,7 +145,14 @@ func BackupExisting() {
 	// we do not care if it works or not, since we really
 	// don't know if the file exists in the first place
 	screen.Println("Creating a backup of the server...")
-	_ = gdrive.RenameFile(RemoteFolder, ServerFolderPacked, fmt.Sprintf("server-backup-%v.tar.gz", time.Now().Unix()))
+	_ = gdrive.RenameFile(RemoteFolder, ServerFolderPacked, getBackupFileName())
+}
+
+func BackupNew() {
+	screen.ClearAndPrintln("Creating a backup of the server...")
+	if err := gdrive.CopyFile(RemoteFolder, ServerFolderPacked, getBackupFileName()); err != nil {
+		screen.Fatalln("Error while creating a backup of the server: %v", err)
+	}
 }
 
 func DownloadRemoteLogFile() {
@@ -165,6 +172,10 @@ func ForceOff() {
 	if err := gdrive.WriteFileContent(RemoteFolder, LockFile, []byte("OFF")); err != nil {
 		screen.Fatalln("Error while telling Google Drive about the new server status: %v", err)
 	}
+}
+
+func getBackupFileName() string {
+	return fmt.Sprintf("server-backup-%v.tar.gz", time.Now().Unix())
 }
 
 func createRemoteFolderIfNotExists() error {

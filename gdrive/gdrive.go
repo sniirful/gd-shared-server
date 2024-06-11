@@ -70,6 +70,33 @@ func RenameFile(parentFolder, oldFileName, newFileName string) error {
 	return err
 }
 
+func CopyFile(parentFolder, filename, newFilename string) error {
+	service, err := gdriveservice.GetService()
+	if err != nil {
+		return err
+	}
+	// we ignore the error because we later ignore
+	// the folder if it is equal to nil
+	folder, _ := GetFolderByName("", parentFolder)
+
+	driveFile, err := GetFileByName(parentFolder, filename)
+	if err != nil {
+		return err
+	}
+	newFile := &drive.File{
+		Name: newFilename,
+	}
+	// if the folder actually exists, add the file
+	// to that folder, but only if we are creating
+	// a new file, that is if err != nil
+	if folder != nil && err != nil {
+		newFile.Parents = []string{folder.Id}
+	}
+
+	_, err = service.Files.Copy(driveFile.Id, newFile).Do()
+	return err
+}
+
 func GetFileByName(parentFolder, filename string) (*drive.File, error) {
 	file, err := getFileByFunction(parentFolder, func(f *drive.File) bool {
 		return f.Name == filename && f.MimeType != MimeTypeFolder

@@ -41,3 +41,7 @@ func ForceUploadServer() {
 func ForceServerOff() {
 	server.ForceOff()
 }
+
+func BackupServer() {
+	server.BackupNew()
+}
