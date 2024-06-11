@@ -16,6 +16,20 @@ const (
 	MimeTypeFolder = "application/vnd.google-apps.folder"
 )
 
+func GetUsageQuota() (int64, int64, error) {
+	service, err := gdriveservice.GetService()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	about, err := service.About.Get().Fields("storageQuota").Do()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return about.StorageQuota.Usage, about.StorageQuota.Limit, nil
+}
+
 func ListAllFiles() ([]*drive.File, error) {
 	return listFiles("trashed = false")
 }
@@ -112,6 +126,15 @@ func GetFileContent(parentFolder, filename string) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+func GetFileSize(parentFolder, filename string) (int64, error) {
+	file, err := GetFileByName(parentFolder, filename)
+	if err != nil {
+		return 0, err
+	}
+
+	return file.Size, nil
 }
 
 func WriteFileContent(parentFolder, filename string, content []byte) error {

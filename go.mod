@@ -4,6 +4,10 @@ go 1.21.5
 
 require (
 	atomicgo.dev/cursor v0.2.0
+	github.com/ActiveState/termtest/conpty v0.5.0
+	github.com/creack/pty v1.1.21
+	github.com/inhies/go-bytesize v0.0.0-20220417184213-4913239db9cf
+	github.com/muesli/cancelreader v0.2.2
 	golang.org/x/oauth2 v0.17.0
 	golang.org/x/term v0.17.0
 	google.golang.org/api v0.167.0
@@ -12,9 +16,7 @@ require (
 require (
 	cloud.google.com/go/compute v1.23.4 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/ActiveState/termtest/conpty v0.5.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
-	github.com/creack/pty v1.1.21 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -24,7 +26,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.1 // indirect
-	github.com/muesli/cancelreader v0.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 // indirect
 	go.opentelemetry.io/otel v1.23.0 // indirect

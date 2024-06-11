@@ -29,15 +29,19 @@ func main() {
 		// we can make sure that the connection with google
 		// drive works properly
 		screen.ClearAndPrintln("Connecting to Google Drive...")
-		if _, err := gdrive.ListAllFiles(); err != nil {
+		driveUsage, driveLimit, err := gdrive.GetUsageQuota()
+		if err != nil {
 			screen.Println("Error while connecting to Google Drive: %v", err)
 			return
 		}
+		// we ignore the error here because if the server hasn't
+		// been set up yet, we don't want to print an error
+		serverSize, _ := gdrive.GetFileSize(server.RemoteFolder, server.ServerFolderPacked)
 
 		if server.IsOn() {
 			serverstatus.HandleOn()
 		} else {
-			serverstatus.HandleOff()
+			serverstatus.HandleOff(serverSize, driveUsage, driveLimit)
 		}
 	}
 }
