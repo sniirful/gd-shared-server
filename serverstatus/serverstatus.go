@@ -47,6 +47,8 @@ func printDefaultSelectionScreen(isServerOn bool, serverSize, driveUsage, driveL
 	screen.Clear()
 
 	if isServerOn {
+		// Google Drive usage: 5.31GiB / 15.00GiB
+		// Server size (as per the last upload): 1.23GiB
 		// The server is currently: ON
 		// 2. View the log until the last upload
 		// 4. Force the server to be considered OFF
