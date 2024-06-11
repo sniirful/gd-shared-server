@@ -3,7 +3,8 @@
 
 This can be used when you have no hosting server available and want to use the direct players’ PCs to host the server they will play in.
 
-<!-- TODO: add pictures or a GIF -->
+![[https://github.com/sniirful/gd-shared-server/blob/main/res/pictures/server-off.png]]
+![[https://github.com/sniirful/gd-shared-server/blob/main/res/pictures/server-on.png]]
 
 ## Security implications
 “gd-shared-server” clearly warns its users about the security issues of this hosting method and therefore implies that it will be used with very trusted people. The two main implications are:
